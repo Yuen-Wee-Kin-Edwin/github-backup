@@ -2,7 +2,11 @@
 
 Ensure that you are login to your GitHub account in the CLI.
 
-2. Setup python virtual environment.
+2. Install [Python](https://www.python.org/downloads/)
+
+Ensure that the `Add python.exe to PATH` is checked
+
+3. Setup python virtual environment.
 ```ps
 // Install virtualenv package
 pip install virtualenv
@@ -20,11 +24,11 @@ pip install -r requirements.txt
 deactivate
 ```
 
-3. Create the executable file.
+4. Create the executable file.
 ```ps
 pyinstaller --onefile ./backup.py
 ```
 
-4. Run the backup.exe
+5. Run the backup.exe
 
 The file is located at dist/backup.exe
