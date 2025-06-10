@@ -32,3 +32,8 @@ pyinstaller --onefile ./backup.py
 5. Run the backup.exe
 
 The file is located at dist/backup.exe
+
+Running tests
+```ps
+python -m unittest discover -s tests
+```
