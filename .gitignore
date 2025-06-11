@@ -4,3 +4,4 @@ build/
 backup.spec
 venv
 GitHub_Backups/
+__pycache__/
