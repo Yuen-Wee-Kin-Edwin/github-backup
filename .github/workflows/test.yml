@@ -27,7 +27,7 @@ jobs:
     - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
-      # Tolerates absence of requirements.txt
+        # Tolerates absence of requirements.txt
         pip install -r requirements.txt || true
         pip install pytest
 
