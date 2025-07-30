@@ -1,10 +1,11 @@
-import unittest
+import sys
 import os
-import subprocess
 import json
+import unittest
 from unittest.mock import patch, MagicMock
 
-from backup import GithubBackup, DESTINATION_PATH
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from backup import GithubBackup
 
 
 class TestGithubBackup(unittest.TestCase):
@@ -24,7 +25,7 @@ class TestGithubBackup(unittest.TestCase):
         # Define a temporary path for testing backups to avoid interfering with actual backups.
         self.test_backup_path = "Test_GitHub_Backups"
         # Create an instance of GithubBackup using the test path.
-        self.github_backup_instance = GithubBackup(self.test_backup_path)
+        self.github_backup_instance = GithubBackup(self.test_backup_path, self.mock_log)
 
         # Remove the test backup directory if it exists from a previous run to ensure a clean state.
         if os.path.exists(self.test_backup_path):
@@ -40,6 +41,9 @@ class TestGithubBackup(unittest.TestCase):
         if os.path.exists(self.test_backup_path):
             import shutil
             shutil.rmtree(self.test_backup_path)
+
+    def mock_log(self, message):
+        pass
 
     @patch("subprocess.run")
     def test_fetch_repos_success(self, mock_subprocess_run):
