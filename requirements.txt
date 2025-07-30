@@ -1,1 +1,2 @@
 pyinstaller==6.14.2
+pytest==8.4.1

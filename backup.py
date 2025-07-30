@@ -35,7 +35,7 @@ class GithubBackup:
         )
 
         if result.returncode != 0:
-            print(f"Error fetching repositories: {result.stderr}")
+            self.log(f"Error fetching repositories: {result.stderr}")
             if self.progress:
                 self.progress(100)
             return []
