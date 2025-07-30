@@ -7,12 +7,13 @@ Ensure that you are login to your GitHub account in the CLI.
 Ensure that the `Add python.exe to PATH` is checked
 
 3. Setup python virtual environment.
+
 ```ps
 // Install virtualenv package
 pip install virtualenv
 
 // Create a virtual environment.
-python -m venv venv
+python -m venv .venv
 
 // Activate virtual environment
 .\venv\Scripts\activate
@@ -25,8 +26,10 @@ deactivate
 ```
 
 4. Create the executable file.
+
 ```ps
 pyinstaller --onefile ./backup.py
+pyinstaller --onefile --windowed ./backup.py
 ```
 
 5. Run the backup.exe
@@ -34,6 +37,7 @@ pyinstaller --onefile ./backup.py
 The file is located at dist/backup.exe
 
 Running tests
+
 ```ps
 python -m unittest discover -s tests
 ```
