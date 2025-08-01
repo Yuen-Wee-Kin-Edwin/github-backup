@@ -2,8 +2,11 @@ import os
 import subprocess
 import json
 import threading
-import tkinter as tk
-from tkinter import filedialog, scrolledtext, ttk
+from PySide6.QtWidgets import (
+    QApplication, QWidget, QLabel, QLineEdit, QPushButton,
+    QVBoxLayout, QHBoxLayout, QFileDialog, QPlainTextEdit, QProgressBar
+)
+from PySide6.QtCore import Qt, QObject, QThread, Signal
 
 DESTINATION_PATH = "GitHub_Backups"
 
@@ -92,47 +95,90 @@ class GithubBackup:
             self.progress(100)
 
 
+class BackupWorker(QObject):
+    log_signal = Signal(str)
+    progress_signal = Signal(int)
+    finished = Signal()
+
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+
+    def run(self):
+        def log(message):
+            self.log_signal.emit(message)
+
+        def progress(value):
+            self.progress_signal.emit(value)
+
+        backup = GithubBackup(self.path, log, progress)
+        repos = backup.fetch_repos()
+
+        if repos:
+            backup.clone_or_update_repos(repos)
+        else:
+            log("No repositories found.\n")
+        self.finished.emit()
+
+
 # GUI class
-class BackupApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("GitHub Backup Tool")
+class BackupApp(QWidget):
+    def __init__(self, /):
+        super().__init__()
+        self.setWindowTitle("GitHub Backup Tool")
+        self.setMinimumWidth(500)
+        self.init_ui()
 
-        # Backup folder input
-        tk.Label(root, text="Backup folder:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+    def init_ui(self):
+        # Layouts.
+        main_layout = QVBoxLayout()
+        path_layout = QHBoxLayout()
 
-        self.path_var = tk.StringVar(value="GitHub_Backups")
-        self.path_entry = tk.Entry(root, textvariable=self.path_var, width=50)
-        self.path_entry.grid(row=0, column=1, padx=5, pady=5)
+        # Backup path label + entry + browse.
+        self.path_label = QLabel("Backup folder:")
+        self.path_input = QLineEdit()
+        self.path_input.setText(DESTINATION_PATH)
+        self.browse_button = QPushButton("Browse")
+        self.browse_button.clicked.connect(self.browse_folder)
 
-        tk.Button(root, text="Browse", command=self.browse_folder).grid(row=0, column=2, padx=5, pady=5)
+        path_layout.addWidget(self.path_label)
+        path_layout.addWidget(self.path_input)
+        path_layout.addWidget(self.browse_button)
 
-        # Output log area
-        self.output_box = scrolledtext.ScrolledText(root, width=80, height=25)
-        self.output_box.grid(row=1, column=0, columnspan=3, padx=10, pady=10)
+        # Output log area.
+        self.output_box = QPlainTextEdit()
+        self.output_box.setReadOnly(True)
 
-        self.progress_bar = ttk.Progressbar(root, orient="horizontal", length=600, mode="determinate")
-        self.progress_bar.grid(row=2, column=0, columnspan=3, pady=5)
+        # Progress bar.
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
 
-        # Start button
-        tk.Button(root, text="Start Backup", command=self.start_backup).grid(row=3, column=1, pady=5)
+        # Start button.
+        self.start_button = QPushButton("Start Backup")
+        self.start_button.clicked.connect(self.start_backup)
+
+        # Assemble layout.
+        main_layout.addLayout(path_layout)
+        main_layout.addWidget(self.output_box)
+        main_layout.addWidget(self.progress_bar)
+        main_layout.addWidget(self.start_button, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self.setLayout(main_layout)
 
     def browse_folder(self):
-        folder = filedialog.askdirectory()
+        folder = QFileDialog.getExistingDirectory(self, "Select Backup Folder")
         if folder:
-            self.path_var.set(folder)
+            self.path_input.setText(folder)
 
     def log(self, message):
-        self.output_box.insert(tk.END, message)
-        self.output_box.see(tk.END)
+        self.output_box.appendPlainText(message)
 
     def update_progress(self, value):
-        self.progress_bar["value"] = value
-        self.root.update_idletasks()
+        self.progress_bar.setValue(value)
 
     def run_backup(self):
-        self.progress_bar["value"] = 0
-        path = self.path_var.get().strip()
+        self.update_progress(0)
+        path = self.path_input.text().strip()
         if not path:
             self.log("Please specify a valid path.\n")
             return
@@ -143,14 +189,34 @@ class BackupApp:
             github.clone_or_update_repos(repos)
         else:
             self.log("No repositories found.\n")
-        self.progress_bar["value"] = 100
+        self.update_progress(100)
 
     def start_backup(self):
-        threading.Thread(target=self.run_backup, daemon=True).start()
+        path = self.path_input.text().strip()
+        if not path:
+            self.log("Please specify a valid path.\n")
+            return
+
+        # Create thread and worker.
+        self.thread = QThread()
+        self.worker = BackupWorker(path)
+        self.worker.moveToThread(self.thread)
+
+        # Connect signals.
+        self.thread.started.connect(self.worker.run)
+        self.worker.log_signal.connect(self.log)
+        self.worker.progress_signal.connect(self.update_progress)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        # Start thread.
+        self.thread.start()
 
 
 # Application entry point
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = BackupApp(root)
-    root.mainloop()
+    app = QApplication([])
+    window = BackupApp()
+    window.show()
+    app.exec()
