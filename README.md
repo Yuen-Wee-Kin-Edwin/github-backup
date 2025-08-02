@@ -28,8 +28,8 @@ deactivate
 4. Create the executable file.
 
 ```ps
-pyinstaller --onefile ./backup.py
-pyinstaller --onefile --windowed ./backup.py
+pyinstaller --onefile ./main.py
+pyinstaller --onefile --windowed --name github_backup ./main.py
 ```
 
 5. Run the backup.exe
